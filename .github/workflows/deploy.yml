@@ -12,9 +12,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Deploy via Clasp
-        uses: erithion/clasp-action@main
+      - name: Authenticate with Google
+        id: auth
+        uses: google-github-actions/auth@v2
         with:
-          credentials: ${{ secrets.GAppScript_SA_CREDENTIALS }}
-          scriptId: "1JNfOWh0Ai7cpGB3g4TWYQcg4wiK88NFjK9IMgajD22m9ODk3_w-n7Jus"
-          rootDir: "."
+          credentials_json: ${{ secrets.GAppScript_SA_CREDENTIALS }}
+          token_format: 'access_token'
+          scopes: 'https://www.googleapis.com/auth/script.projects https://www.googleapis.com/auth/drive.file'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Clasp
+        run: npm install -g @google/clasp
+
+      - name: Configure Clasp Session
+        run: |
+          echo '{"token":{"access_token":"${{ steps.auth.outputs.access_token }}","token_type":"Bearer"},"oauth2ClientSettings":{"clientId":"","clientSecret":"","redirectUri":""},"isLocalCreds":false}' > ~/.clasprc.json
+
+      - name: Push Code
+        run: clasp push --force
