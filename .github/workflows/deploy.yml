@@ -10,19 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/checkout@v3
+      - name: Deploy via Clasp
+        uses: erithion/clasp-action@v1.0.1
         with:
-          node-version: '18'
-
-      - name: Install Clasp
-        run: npm install -g @google/clasp
-
-      - name: Create clasprc
-        run: |
-          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
-
-      - name: Push Code to Apps Script
-        run: clasp push --force
+          credentials: ${{ secrets.GAppScript_SA_CREDENTIALS }}
+          scriptId: "1JNfOWh0Ai7cpGB3g4TWYQcg4wiK88NFjK9IMgajD22m9ODk3_w-n7Jus"
+          rootDir: "."
