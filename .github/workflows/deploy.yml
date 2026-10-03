@@ -32,7 +32,7 @@ jobs:
 
       - name: Configure Clasp Session
         run: |
-          echo '{"token":{"access_token":"${{ steps.auth.outputs.access_token }}","token_type":"Bearer"},"oauth2ClientSettings":{"clientId":"","clientSecret":"","redirectUri":""},"isLocalCreds":false}' > ~/.clasprc.json
+          echo '{"token":{"access_token":"${{ steps.auth.outputs.access_token }}"}}' > ~/.clasprc.json
 
       - name: Push Code
         run: clasp push --force
