@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy via Clasp
-        uses: erithion/clasp-action@v1.0.1
+        uses: erithion/clasp-action@main
         with:
           credentials: ${{ secrets.GAppScript_SA_CREDENTIALS }}
           scriptId: "1JNfOWh0Ai7cpGB3g4TWYQcg4wiK88NFjK9IMgajD22m9ODk3_w-n7Jus"
