@@ -27,27 +27,43 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Clasp
-        run: npm install -g @google/clasp
-
-      - name: Configure Clasp Credentials
+      - name: Deploy via Apps Script API
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
-          cat << 'EOF' > ~/.clasprc.json
-          {
-            "token": {
-              "access_token": "${{ steps.auth.outputs.access_token }}",
-              "scope": "https://www.googleapis.com/auth/script.projects https://www.googleapis.com/auth/drive.file",
-              "token_type": "Bearer",
-              "expiry_date": 253402300799000
-            },
-            "oauth2ClientSettings": {
-              "clientId": "dummy.apps.googleusercontent.com",
-              "clientSecret": "dummy_secret",
-              "redirectUri": "http://localhost"
-            },
-            "isLocalCreds": false
-          }
-          EOF
+          node -e '
+          const fs = require("fs");
+          const token = process.env.ACCESS_TOKEN;
+          const claspConfig = JSON.parse(fs.readFileSync(".clasp.json"));
+          const scriptId = claspConfig.scriptId;
 
-      - name: Push Code
-        run: clasp push --force
+          const manifest = fs.readFileSync("appsscript.json", "utf8");
+          const files = [
+            { name: "appsscript", type: "JSON", source: manifest }
+          ];
+
+          fs.readdirSync(".").forEach(file => {
+            if (file.endsWith(".js") || file.endsWith(".gs")) {
+              const name = file.replace(/\.(js|gs)$/, "");
+              const source = fs.readFileSync(file, "utf8");
+              files.push({ name, type: "SERVER_JS", source });
+            }
+          });
+
+          fetch(`https://script.googleapis.com/v1/projects/${scriptId}/content`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ files })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.error) {
+              console.error("API Fehler:", JSON.stringify(data.error, null, 2));
+              process.exit(1);
+            }
+            console.log("Erfolgreich direkt via Google API hochgeladen!");
+          });
+          '
