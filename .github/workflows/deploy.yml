@@ -30,9 +30,24 @@ jobs:
       - name: Install Clasp
         run: npm install -g @google/clasp
 
-      - name: Configure Clasp Session
+      - name: Configure Clasp Credentials
         run: |
-          echo '{"token":{"access_token":"${{ steps.auth.outputs.access_token }}"}}' > ~/.clasprc.json
+          cat << 'EOF' > ~/.clasprc.json
+          {
+            "token": {
+              "access_token": "${{ steps.auth.outputs.access_token }}",
+              "scope": "https://www.googleapis.com/auth/script.projects https://www.googleapis.com/auth/drive.file",
+              "token_type": "Bearer",
+              "expiry_date": 253402300799000
+            },
+            "oauth2ClientSettings": {
+              "clientId": "dummy.apps.googleusercontent.com",
+              "clientSecret": "dummy_secret",
+              "redirectUri": "http://localhost"
+            },
+            "isLocalCreds": false
+          }
+          EOF
 
       - name: Push Code
         run: clasp push --force
