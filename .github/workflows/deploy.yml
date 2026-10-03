@@ -30,9 +30,5 @@ jobs:
       - name: Install Clasp
         run: npm install -g @google/clasp
 
-      - name: Configure Clasp Session
-        run: |
-          echo '{"token":{"access_token":"${{ steps.auth.outputs.access_token }}"}}' > ~/.clasprc.json
-
       - name: Push Code
-        run: clasp push --force
+        run: clasp --adc push --force
