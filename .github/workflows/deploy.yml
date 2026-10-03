@@ -37,7 +37,17 @@ jobs:
           const claspConfig = JSON.parse(fs.readFileSync(".clasp.json"));
           const scriptId = claspConfig.scriptId;
 
-          const manifest = fs.readFileSync("appsscript.json", "utf8");
+          // Standard-Manifest nutzen, falls keine appsscript.json im Repo liegt
+          let manifest = JSON.stringify({
+            timeZone: "Europe/Berlin",
+            exceptionLogging: "STACKDRIVER",
+            runtimeVersion: "V8"
+          });
+
+          if (fs.existsSync("appsscript.json")) {
+            manifest = fs.readFileSync("appsscript.json", "utf8");
+          }
+
           const files = [
             { name: "appsscript", type: "JSON", source: manifest }
           ];
