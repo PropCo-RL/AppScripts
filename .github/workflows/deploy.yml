@@ -9,71 +9,21 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Code auschecken
         uses: actions/checkout@v4
 
-      - name: Authenticate with Google
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GAppScript_SA_CREDENTIALS }}
-          token_format: 'access_token'
-          access_token_scopes: |-
-            https://www.googleapis.com/auth/script.projects
-            https://www.googleapis.com/auth/drive.file
-
-      - name: Setup Node.js
+      - name: Node.js einrichten
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Deploy via Apps Script API
+      - name: clasp installieren
+        run: npm install -g @google/clasp
+
+      - name: clasprc.json erstellen
+        run: echo "$CLASPRC_JSON" > ~/.clasprc.json
         env:
-          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-        run: |
-          node -e '
-          const fs = require("fs");
-          const token = process.env.ACCESS_TOKEN;
-          const claspConfig = JSON.parse(fs.readFileSync(".clasp.json"));
-          const scriptId = claspConfig.scriptId;
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
 
-          // Standard-Manifest nutzen, falls keine appsscript.json im Repo liegt
-          let manifest = JSON.stringify({
-            timeZone: "Europe/Berlin",
-            exceptionLogging: "STACKDRIVER",
-            runtimeVersion: "V8"
-          });
-
-          if (fs.existsSync("appsscript.json")) {
-            manifest = fs.readFileSync("appsscript.json", "utf8");
-          }
-
-          const files = [
-            { name: "appsscript", type: "JSON", source: manifest }
-          ];
-
-          fs.readdirSync(".").forEach(file => {
-            if (file.endsWith(".js") || file.endsWith(".gs")) {
-              const name = file.replace(/\.(js|gs)$/, "");
-              const source = fs.readFileSync(file, "utf8");
-              files.push({ name, type: "SERVER_JS", source });
-            }
-          });
-
-          fetch(`https://script.googleapis.com/v1/projects/${scriptId}/content`, {
-            method: "PUT",
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ files })
-          })
-          .then(res => res.json())
-          .then(data => {
-            if (data.error) {
-              console.error("API Fehler:", JSON.stringify(data.error, null, 2));
-              process.exit(1);
-            }
-            console.log("Erfolgreich direkt via Google API hochgeladen!");
-          });
-          '
+      - name: Code zu Google Apps Script pushen
+        run: clasp push -f
