@@ -3,7 +3,7 @@ name: Daily Backup Apps Scripts
 on:
   schedule:
     - cron: '0 2 * * *' # Täglich um 02:00 Uhr UTC
-  workflow_dispatch: # Manueller Start per Button
+  workflow_dispatch: # Manueller Start per Button im GitHub Dashboard
 
 jobs:
   backup:
@@ -23,6 +23,7 @@ jobs:
       - name: Skripte via Service Account synchronisieren
         env:
           GAPPSCRIPT_SA_CREDENTIALS: ${{ secrets.GAPPSCRIPT_SA_CREDENTIALS }}
+          WORKSPACE_USER_EMAIL: "support@l8street.com"
         run: node scripts/sync-all.js
 
       - name: Änderungen in GitHub committen & pushen
