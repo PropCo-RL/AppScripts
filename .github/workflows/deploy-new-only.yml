@@ -1,0 +1,38 @@
+name: Deploy ONLY New Scripts to Apps Script
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Startet den Deploy-Prozess AUSSCHLIESSLICH bei Änderungen im Ordner 'NEW_SCRIPTS'
+      - 'projects/NEW_SCRIPTS/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Clasp installieren
+        run: npm install -g @google/clasp
+
+      - name: Clasp Anmeldedatei konfigurieren
+        env:
+          GAPPSCRIPT_SA_CREDENTIALS: ${{ secrets.GAPPSCRIPT_SA_CREDENTIALS }}
+        run: |
+          echo "$GAPPSCRIPT_SA_CREDENTIALS" > ~/.clasprc.json
+
+      # Pusht NUR den spezifischen Ordner für neue Skripte
+      - name: Nur neues Projekt zu Google Apps Script pushen
+        run: |
+          if [ -d "projects/NEW_SCRIPTS" ]; then
+            cd projects/NEW_SCRIPTS
+            clasp push --force
+          fi
