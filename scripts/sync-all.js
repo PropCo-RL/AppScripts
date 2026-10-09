@@ -10,27 +10,23 @@ async function syncAllScripts() {
     }
 
     const credentials = JSON.parse(saCredentialsJson);
-    const userToImpersonate = process.env.WORKSPACE_USER_EMAIL || 'support@l8street.com';
 
-    console.log(`Starte Sync via Domain-Wide Delegation für: ${userToImpersonate}...`);
+    console.log(`Starte Sync via direkter Service Account Freigabe...`);
 
-    // Exakte Scopes wie in der Google Workspace Admin Console hinterlegt
-    const SCOPES = [
-      'https://www.googleapis.com/auth/drive.readonly',
-      'https://www.googleapis.com/auth/script.projects.readonly'
-    ];
-
+    // Direkte Auth OHNE "subject:" (Impersonation)
     const auth = new google.auth.JWT({
       email: credentials.client_email,
       key: credentials.private_key,
-      scopes: SCOPES,
-      subject: userToImpersonate
+      scopes: [
+        'https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/script.projects.readonly'
+      ]
     });
 
     const drive = google.drive({ version: 'v3', auth });
     const scriptApi = google.script({ version: 'v1', auth });
 
-    console.log("Suche alle Apps Script Projekte & Sheets in Google Drive...");
+    console.log("Suche alle freigegebenen Apps Script Projekte & Sheets...");
 
     const driveRes = await drive.files.list({
       q: "(mimeType='application/vnd.google-apps.script' or mimeType='application/vnd.google-apps.spreadsheet') and trashed=false",
