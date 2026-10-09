@@ -1,14 +1,14 @@
-name: Deploy Code to Google Apps Script
+name: Deploy Code to Apps Script & Auto-Backup
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'projects/**' # Startet NUR, wenn Dateien im Ordner projects/ geändert wurden
+      - 'projects/**' # WICHTIG: Reagiert NUR, wenn Sie Dateien im Ordner projects/ verändern/committen!
 
 jobs:
-  deploy:
+  deploy-and-sync:
     runs-on: ubuntu-latest
     steps:
       - name: Code auschecken
@@ -19,24 +19,38 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Clasp installieren
-        run: npm install -g @google/clasp
+      - name: Google APIs & Clasp installieren
+        run: npm install googleapis @google/clasp -g
 
-      - name: Clasp Zugangsdaten konfigurieren
+      - name: Clasp Anmeldedatei für Service Account erstellen
         env:
           GAPPSCRIPT_SA_CREDENTIALS: ${{ secrets.GAPPSCRIPT_SA_CREDENTIALS }}
         run: |
-          # Erstellt die notwendige clasp-Anmeldedatei für den Service Account
           echo "$GAPPSCRIPT_SA_CREDENTIALS" > ~/.clasprc.json
 
-      - name: Geänderte Projekte zu Google Apps Script pushen
+      # 1. SCHRITT: Code zu Google Apps Script senden
+      - name: Code zu Google Apps Script pushen
         run: |
-          # Geht durch jeden Projektordner und pusht den Code via clasp
           for dir in projects/*/; do
             if [ -d "$dir" ]; then
-              echo "Pushe Projekt: $dir"
+              echo "Pushe Änderungen für: $dir"
               cd "$dir"
-              clasp push --force || echo "Fehler beim Pushen von $dir"
+              clasp push --force || echo "Warnung bei $dir"
               cd ../..
             fi
           done
+
+      # 2. SCHRITT: Direkt im Anschluss neues Backup ziehen
+      - name: Neues Backup ziehen
+        env:
+          GAPPSCRIPT_SA_CREDENTIALS: ${{ secrets.GAPPSCRIPT_SA_CREDENTIALS }}
+        run: node scripts/sync-all.js
+
+      # 3. SCHRITT: Stand in GitHub sichern (falls Google Metadaten angepasst hat)
+      - name: Änderungen in GitHub sichern
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Automatisches Backup nach Commit/Push [$(date -u +'%Y-%m-%d %H:%M UTC')]"
+          git push
