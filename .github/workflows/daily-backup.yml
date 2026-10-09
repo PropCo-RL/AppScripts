@@ -1,0 +1,36 @@
+name: Daily Backup Apps Scripts
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Jeden Tag um 02:00 Uhr UTC
+  workflow_dispatch: # Für manuellen Start
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Clasp & GoogleAPIs installieren
+        # Wir installieren zusätzlich das googleapis Paket für die Suche
+        run: npm install -g @google/clasp && npm install googleapis
+
+      - name: clasprc.json erstellen
+        run: echo "$CLASPRC_JSON" > ~/.clasprc.json
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+
+      - name: Skripte synchronisieren
+        run: node scripts/sync-all.js
+
+      - name: Änderungen committen
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Automatisches Backup aller Skripte"
+          git push
