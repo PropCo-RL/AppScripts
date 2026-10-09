@@ -24,7 +24,8 @@ const SHEET_SCRIPT_IDS = [
   "1QXnG2kZc1YWoGnCk7kRTULYlTEUjlcuFxl1QzHgBS4r7-DUMfjkETKPq",
   "1e3L-vQPfm09-jlfQX4e74xcEUcL-FxlVneM4lfx4Ns2ATXzJVnKE8pfp",
   "1KbFzROEK8Devsv5ClWEk0Xa56R8B5Wb80OLE2cczhE5zZKEerbRQSnzb",
-  "1XTHzi5USyP0glUWfr18WgZOkI2m0LW4fK5LxYxK9C0cSPZpU9Iuvgles"
+  "1XTHzi5USyP0glUWfr18WgZOkI2m0LW4fK5LxYxK9C0cSPZpU9Iuvgles",
+  "11OKBinxNFi1mEz4q9_pKDZYy8_QK5fZI4q3UCUYcgy0s39BtnppcJ_ZM"
 ];
 
 async function syncAllScripts() {
