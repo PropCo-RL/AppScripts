@@ -1,12 +1,12 @@
-name: Deploy ONLY New Scripts to Apps Script
+name: Deploy ONLY GitHub_1 to Google Apps Script
 
 on:
   push:
     branches:
       - main
     paths:
-      # Startet den Deploy-Prozess AUSSCHLIESSLICH bei Änderungen im Ordner 'NEW_SCRIPTS'
-      - 'projects/NEW_SCRIPTS/**'
+      # WICHTIG: Reagiert NUR, wenn Dateien im Ordner projects/GitHub_1 verändert werden!
+      - 'projects/GitHub_1/**'
 
 jobs:
   deploy:
@@ -29,10 +29,10 @@ jobs:
         run: |
           echo "$GAPPSCRIPT_SA_CREDENTIALS" > ~/.clasprc.json
 
-      # Pusht NUR den spezifischen Ordner für neue Skripte
-      - name: Nur neues Projekt zu Google Apps Script pushen
+      - name: Nur GitHub_1 zu Google Apps Script pushen
         run: |
-          if [ -d "projects/NEW_SCRIPTS" ]; then
-            cd projects/NEW_SCRIPTS
+          if [ -d "projects/GitHub_1" ]; then
+            echo "Pushe Änderungen für projects/GitHub_1..."
+            cd projects/GitHub_1
             clasp push --force
           fi
