@@ -1,58 +1,81 @@
 const fs = require('fs');
-const { execSync } = require('child_process');
+const path = require('path');
 const { google } = require('googleapis');
 
-async function syncScripts() {
+async function syncAllScripts() {
   try {
-    const configPath = `${process.env.HOME}/.clasprc.json`;
-    if (!fs.existsSync(configPath)) {
-      throw new Error(`Konnte .clasprc.json nicht unter ${configPath} finden.`);
+    // 1. Service Account Credentials aus den Umgebungsvariablen laden
+    const saCredentialsJson = process.env.GAPPSCRIPT_SA_CREDENTIALS;
+    if (!saCredentialsJson) {
+      throw new Error("Secret GAPPSCRIPT_SA_CREDENTIALS fehlt oder ist leer!");
     }
 
-    const claspConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const credentials = JSON.parse(saCredentialsJson);
 
-    // Verschiedene Formate von .clasprc.json abfangen
-    const token = claspConfig.token || claspConfig;
-    const clientSettings = claspConfig.oauth2ClientSettings || {};
-    
-    const clientId = clientSettings.clientId || clientSettings.client_id || process.env.CLIENT_ID;
-    const clientSecret = clientSettings.clientSecret || clientSettings.client_secret || process.env.CLIENT_SECRET;
-
-    const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret);
-    oAuth2Client.setCredentials(token);
-
-    const drive = google.drive({ version: 'v3', auth: oAuth2Client });
-
-    console.log("Suche nach allen Apps Script Dateien in Google Drive...");
-
-    const response = await drive.files.list({
-      q: "mimeType='application/vnd.google-apps.script' and trashed=false",
-      fields: 'files(id, name)',
-      pageSize: 1000
+    // 2. Authentifizierung für Google Drive & Apps Script API initialisieren
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: [
+        'https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/script.projects.readonly'
+      ],
     });
 
-    const scripts = response.data.files || [];
-    console.log(`${scripts.length} Skripte gefunden. Starte Sync...`);
+    const drive = google.drive({ version: 'v3', auth });
+    const scriptApi = google.script({ version: 'v1', auth });
 
-    if (!fs.existsSync('projects')) fs.mkdirSync('projects');
+    console.log("Suche alle Apps Script Projekte in Google Drive...");
 
+    // 3. Alle Apps Script Dateien auflisten
+    const driveRes = await drive.files.list({
+      q: "mimeType='application/vnd.google-apps.script' and trashed=false",
+      fields: 'files(id, name)',
+      pageSize: 1000,
+    });
+
+    const scripts = driveRes.data.files || [];
+    console.log(`${scripts.length} Skripte gefunden. Starte Download...`);
+
+    const projectsDir = path.join(__dirname, '../projects');
+    if (!fs.existsSync(projectsDir)) {
+      fs.mkdirSync(projectsDir, { recursive: true });
+    }
+
+    // 4. Jedes Skript herunterladen
     for (const script of scripts) {
       const folderName = script.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const folderPath = `projects/${folderName}`;
+      const folderPath = path.join(projectsDir, folderName);
 
-      console.log(`Verarbeite: ${script.name} (${script.id})`);
+      console.log(`Lade herunter: ${script.name} (${script.id})...`);
 
       if (!fs.existsSync(folderPath)) {
         fs.mkdirSync(folderPath, { recursive: true });
       }
 
+      // .clasp.json anlegen, damit Sie später bei Bedarf via Clasp pushen können
       const claspJson = { scriptId: script.id, rootDir: "." };
-      fs.writeFileSync(`${folderPath}/.clasp.json`, JSON.stringify(claspJson, null, 2));
+      fs.writeFileSync(path.join(folderPath, '.clasp.json'), JSON.stringify(claspJson, null, 2));
 
       try {
-        execSync('clasp pull', { cwd: folderPath, stdio: 'ignore' });
-      } catch (e) {
-        console.error(`Fehler beim Pull von ${script.name}. Überspringe...`);
+        // Inhalt des Apps Script Projekts via Google Apps Script API abrufen
+        const content = await scriptApi.projects.getContent({ scriptId: script.id });
+        const files = content.data.files || [];
+
+        for (const file of files) {
+          let ext = '.js';
+          if (file.type === 'HTML') ext = '.html';
+          if (file.type === 'JSON') ext = '.json';
+
+          // appsscript.json benötigt keine doppelte Endung
+          const filename = file.name === 'appsscript' && ext === '.json' 
+            ? 'appsscript.json' 
+            : `${file.name}${ext}`;
+
+          const filePath = path.join(folderPath, filename);
+          fs.writeFileSync(filePath, file.source || '');
+        }
+      } catch (err) {
+        console.error(`Fehler beim Herunterladen von ${script.name}:`, err.message);
       }
     }
 
@@ -64,4 +87,4 @@ async function syncScripts() {
   }
 }
 
-syncScripts();
+syncAllScripts();
