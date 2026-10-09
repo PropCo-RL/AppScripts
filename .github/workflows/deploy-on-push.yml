@@ -1,0 +1,42 @@
+name: Deploy Code to Google Apps Script
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'projects/**' # Startet NUR, wenn Dateien im Ordner projects/ geändert wurden
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Clasp installieren
+        run: npm install -g @google/clasp
+
+      - name: Clasp Zugangsdaten konfigurieren
+        env:
+          GAPPSCRIPT_SA_CREDENTIALS: ${{ secrets.GAPPSCRIPT_SA_CREDENTIALS }}
+        run: |
+          # Erstellt die notwendige clasp-Anmeldedatei für den Service Account
+          echo "$GAPPSCRIPT_SA_CREDENTIALS" > ~/.clasprc.json
+
+      - name: Geänderte Projekte zu Google Apps Script pushen
+        run: |
+          # Geht durch jeden Projektordner und pusht den Code via clasp
+          for dir in projects/*/; do
+            if [ -d "$dir" ]; then
+              echo "Pushe Projekt: $dir"
+              cd "$dir"
+              clasp push --force || echo "Fehler beim Pushen von $dir"
+              cd ../..
+            fi
+          done
