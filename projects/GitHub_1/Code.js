@@ -1,3 +1,3 @@
-JO function myFunction() {
+function myFunction() {
   
-}jo
+}
