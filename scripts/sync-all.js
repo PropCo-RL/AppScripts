@@ -25,7 +25,9 @@ const SHEET_SCRIPT_IDS = [
   "1e3L-vQPfm09-jlfQX4e74xcEUcL-FxlVneM4lfx4Ns2ATXzJVnKE8pfp",
   "1KbFzROEK8Devsv5ClWEk0Xa56R8B5Wb80OLE2cczhE5zZKEerbRQSnzb",
   "1XTHzi5USyP0glUWfr18WgZOkI2m0LW4fK5LxYxK9C0cSPZpU9Iuvgles",
-  "11OKBinxNFi1mEz4q9_pKDZYy8_QK5fZI4q3UCUYcgy0s39BtnppcJ_ZM"
+  "11OKBinxNFi1mEz4q9_pKDZYy8_QK5fZI4q3UCUYcgy0s39BtnppcJ_ZM",
+  "1Yf-BgGRh6_HpyLlni-K8_HN6KWXp_qg4pIWtrhsdke31PwhDQvGk2SK",
+  "1o98ykJvnSRIR4r1eMGWW-6BCB1DYkNf-0UX-EliGjoCil122X3K61xF-1XuNrxCj-cKzOXVcPxZe2gIi0tLP19KOqRZGBdmxcCqKAgRvjqXTkTT1z"
 ];
 
 async function syncAllScripts() {
